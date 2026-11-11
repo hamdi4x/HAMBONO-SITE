@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>HAMBONO — Admin</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Aref+Ruqaa:wght@700&family=Tajawal:wght@400;700&display=swap">
+<style>
+:root{--void:#040405;--ash:#14161a;--bone:#d8cebf;--dim:#8d877d;--blood:#9b2218;--steel:#3d6075}
+*{box-sizing:border-box;margin:0}
+body{background:var(--void);color:var(--bone);font:400 1rem/1.7 Tajawal,sans-serif;padding:1.5rem clamp(1rem,4vw,3rem)}
+h1,h2{font-family:'Aref Ruqaa',serif}
+h1{font-size:2rem}h2{font-size:1.3rem;margin:2rem 0 .8rem}
+header{display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap}
+button,input{font:inherit;color:var(--bone);background:var(--ash);border:1px solid #fff2;padding:.45rem 1rem}
+button{cursor:pointer}button:hover{border-color:var(--blood)}
+button.go{background:#2a1210}
+:focus-visible{outline:2px solid var(--blood);outline-offset:2px}
+#login{max-width:340px;margin:20vh auto;display:grid;gap:1rem}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:1rem}
+.card{background:var(--ash);padding:1.2rem;border-inline-start:4px solid var(--blood)}
+.card.a{border-inline-start-color:var(--steel)}
+.card h3{font-size:1.1rem}.big{font-size:2.6rem;line-height:1.1;font-weight:700}
+.row{display:flex;justify-content:space-between;color:var(--dim)}
+.row b{color:var(--bone)}
+svg{width:100%;height:220px;background:var(--ash)}
+.key{display:flex;gap:1.5rem;margin-top:.5rem;color:var(--dim)}
+.key i{display:inline-block;width:12px;height:12px;margin-inline-end:.4rem}
+form.pf{display:grid;grid-template-columns:90px 1fr 1fr auto auto;gap:.6rem;align-items:center;margin-bottom:.6rem}
+@media(max-width:700px){form.pf{grid-template-columns:1fr 1fr}}
+.msg{color:var(--dim);min-height:1.5rem}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<form id="login"><h1 data-i="login"></h1><input id="pw" type="password" autocomplete="current-password" required><button class="go" data-i="enter"></button><p class="msg" id="err"></p></form>
+<main id="app" hidden>
+  <header><h1>HAMBONO · <span data-i="dash"></span></h1><div><button id="lang"></button> <button id="out" data-i="exit"></button></div></header>
+  <h2 data-i="byp"></h2><div class="grid" id="cards"></div>
+  <h2 data-i="last14"></h2><svg id="chart" viewBox="0 0 700 220" preserveAspectRatio="none" role="img"></svg>
+  <div class="key"><span><i style="background:var(--blood)"></i>Windows</span><span><i style="background:var(--steel)"></i>Android</span></div>
+  <h2 data-i="aud"></h2><div class="grid" id="aud"></div>
+  <h2 data-i="manage"></h2><div id="manage"></div><p class="msg" id="saved"></p>
+</main>
+<script>
+const T={ar:{login:'دخول لوحة التحكم',enter:'دخول',exit:'خروج',dash:'لوحة التحكم',byp:'التحميلات حسب المنصة',last14:'التحميلات آخر 14 يومًا',aud:'الزوار',manage:'إدارة التحميلات',
+total:'إجمالي التحميلات',today:'اليوم',unique:'مستخدمون فريدون',visits:'إجمالي الزيارات',visitors:'زوار فريدون',langs:'لغة الزوار',devs:'أجهزة التحميل',ver:'الإصدار',file:'اسم الملف في downloads',on:'مفعّل',save:'حفظ التغييرات',saved:'تم الحفظ',bad:'كلمة المرور غير صحيحة',other:'English',ar:'عربي',en:'English',desktop:'كمبيوتر',android:'أندرويد',ios:'آيفون / آيباد'},
+en:{login:'Admin login',enter:'Sign in',exit:'Sign out',dash:'Dashboard',byp:'Downloads by platform',last14:'Downloads, last 14 days',aud:'Audience',manage:'Manage downloads',
+total:'Total downloads',today:'Today',unique:'Unique users',visits:'Total visits',visitors:'Unique visitors',langs:'Visitor language',devs:'Download devices',ver:'Version',file:'File name in downloads',on:'Enabled',save:'Save changes',saved:'Saved',bad:'Wrong password',other:'العربية',ar:'Arabic',en:'English',desktop:'Desktop',android:'Android',ios:'iPhone / iPad'}};
+let L=localStorage.getItem('hl')||'ar',tok=sessionStorage.getItem('ht'),S=null;
+const $=s=>document.querySelector(s),t=k=>T[L][k];
+const api=(u,o={})=>fetch(u,{...o,headers:{'Content-Type':'application/json',Authorization:'Bearer '+tok}}).then(r=>{if(r.status===401){tok=null;sessionStorage.removeItem('ht');show();throw 0}return r.json()});
+function show(){$('#login').hidden=!!tok;$('#app').hidden=!tok;if(tok)load()}
+function txt(){document.documentElement.lang=L;document.documentElement.dir=L==='ar'?'rtl':'ltr';
+  document.querySelectorAll('[data-i]').forEach(e=>e.textContent=t(e.dataset.i));$('#lang').textContent=t('other');if(S)draw()}
+function draw(){
+  const names={windows:'Windows',android:'Android'};
+  $('#cards').innerHTML=Object.entries(S.platforms).map(([k,p],i)=>`<div class="card ${i?'a':''}"><h3>${names[k]}</h3><div class="big">${p.total}</div><div class="row"><span>${t('today')}</span><b>${p.today}</b></div><div class="row"><span>${t('unique')}</span><b>${p.unique}</b></div></div>`).join('');
+  const w=S.platforms.windows.daily,a=S.platforms.android.daily,m=Math.max(1,...w,...a),n=S.days.length,bw=700/n;
+  $('#chart').innerHTML=S.days.map((d,i)=>{const x=i*bw,hw=w[i]/m*180,ha=a[i]/m*180;
+    return `<rect x="${x+4}" y="${210-hw}" width="${bw/2-5}" height="${hw}" fill="#9b2218"><title>${d} Windows: ${w[i]}</title></rect><rect x="${x+bw/2}" y="${210-ha}" width="${bw/2-5}" height="${ha}" fill="#3d6075"><title>${d} Android: ${a[i]}</title></rect>`}).join('');
+  const list=o=>Object.entries(o).map(([k,v])=>`<div class="row"><span>${t(k)||k}</span><b>${v}</b></div>`).join('')||'—';
+  $('#aud').innerHTML=`<div class="card"><h3>${t('visits')}</h3><div class="big">${S.visits}</div><div class="row"><span>${t('visitors')}</span><b>${S.visitors}</b></div></div>
+   <div class="card a"><h3>${t('langs')}</h3>${list(S.langs)}</div><div class="card"><h3>${t('devs')}</h3>${list(S.devices)}</div>`;
+  $('#manage').innerHTML=Object.entries(S.config).map(([k,p])=>`<form class="pf" data-k="${k}"><b>${names[k]}</b>
+   <input name="version" value="${p.version}" aria-label="${t('ver')}" placeholder="${t('ver')}"><input name="file" value="${p.file}" aria-label="${t('file')}" placeholder="${t('file')}">
+   <label><input type="checkbox" name="enabled" ${p.enabled?'checked':''}> ${t('on')}</label><button class="go">${t('save')}</button></form>`).join('');
+  document.querySelectorAll('form.pf').forEach(f=>f.onsubmit=async e=>{e.preventDefault();
+    await api('/api/admin/platforms/'+f.dataset.k,{method:'PUT',body:JSON.stringify({version:f.version.value,file:f.file.value,enabled:f.enabled.checked})});
+    $('#saved').textContent=t('saved');load()});
+}
+async function load(){S=await api('/api/admin/stats');draw()}
+$('#login').onsubmit=async e=>{e.preventDefault();
+  const r=await fetch('/api/admin/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:$('#pw').value})});
+  if(!r.ok){$('#err').textContent=t('bad');return}
+  tok=(await r.json()).token;sessionStorage.setItem('ht',tok);$('#pw').value='';$('#err').textContent='';show()};
+$('#out').onclick=()=>{tok=null;sessionStorage.removeItem('ht');show()};
+$('#lang').onclick=()=>{L=L==='ar'?'en':'ar';localStorage.setItem('hl',L);txt()};
+txt();show();setInterval(()=>tok&&load(),30000);
+</script>
+</body>
+</html>
